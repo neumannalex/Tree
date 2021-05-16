@@ -136,5 +136,14 @@ namespace Tests
             orderResult.Should().HaveCount(3);
             orderResult.Should().ContainInOrder(new[] { _simpleTreeData.Node22, _simpleTreeData.Node21, _simpleTreeData.Node11 });
         }
+    
+        [Fact]
+        public void TreeToString()
+        {
+            var text = _simpleTreeData.Tree.ToString();
+
+            text.Should().Contain("\"String\"")
+                .And.Contain(_simpleTreeData.NumberOfNodes.ToString());
+        }
     }
 }

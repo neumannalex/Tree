@@ -4,6 +4,16 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>NeumannAlex.Tree</RootNamespace>
     <AssemblyName>NeumannAlex.Tree</AssemblyName>
+    <Authors>Alexander Neumann</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description>A generic Tree class</Description>
+    <Copyright>Copyright © Alexander Neumann 2021</Copyright>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageProjectUrl>https://github.com/neumannalex/Tree</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/neumannalex/Tree</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
   </PropertyGroup>
 
 </Project>
