@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace NeumannAlex.Tree
 {
-    public class TreeNode<T> : IEnumerable<TreeNode<T>>
+    public class TreeNode<T> : ITreeNode<T>
     {
         #region Ctor
         public TreeNode()
@@ -19,15 +20,12 @@ namespace NeumannAlex.Tree
         }
         #endregion
 
-        #region Fields
-        #endregion
-
         #region Properties
-        public TreeNode<T> Root
+        public ITreeNode<T> Root
         {
             get
             {
-                var node = this;
+                var node = this as ITreeNode<T>;
 
                 while (!node.IsRoot)
                 {
@@ -38,46 +36,57 @@ namespace NeumannAlex.Tree
             }
         }
 
-        public TreeNode<T> Parent { get; private set; }
+        public ITreeNode<T> Parent { get; set; }
 
-        public List<TreeNode<T>> Children { get; private set; } = new List<TreeNode<T>>();
+        public List<ITreeNode<T>> Children { get; set; } = new List<ITreeNode<T>>();
 
         public T Value { get; set; }
 
-        public bool IsRoot => Parent == null;
+        public virtual bool IsRoot => Parent == null;
 
-        public bool HasChildren => Children.Count > 0;
+        public bool IsTreeRoot { get; internal set; }
 
-        public bool HasValue => Value != null;  // Geht das auch mit int etc?
+        public virtual bool HasChildren => Children.Count > 0;
 
-        public int Depth
+        public virtual bool HasValue => Value != null;
+
+        public virtual int Depth
         {
             get
             {
                 var depth = 0;
 
-                var node = this;
-                while (!node.IsRoot)
+                var node = this as ITreeNode<T>;
+                while(true)
                 {
-                    node = node.Parent;
                     depth++;
+
+                    if (node.IsRoot)
+                    {
+                        if (node.IsTreeRoot)
+                            depth--;
+
+                        break;
+                    }
+                        
+                    node = node.Parent;
                 }
 
                 return depth;
             }
         }
 
-        public List<int> Path
+        public virtual List<int> Path
         {
             get
             {
                 return GetPath(this);
 
-                static List<int> GetPath(TreeNode<T> node)
+                static List<int> GetPath(ITreeNode<T> node)
                 {
                     if (node.IsRoot)
                     {
-                        if (node is Tree<T>)
+                        if (node.IsTreeRoot)
                             return new List<int>();
                         else
                             return new List<int> { 1 };
@@ -96,7 +105,15 @@ namespace NeumannAlex.Tree
             }
         }
 
-        public int Count
+        public virtual string PathString
+        {
+            get
+            {
+                return string.Join('.', Path);
+            }
+        }
+
+        public virtual int Count
         {
             get
             {
@@ -106,7 +123,7 @@ namespace NeumannAlex.Tree
         #endregion
 
         #region Methods
-        public TreeNode<T> AddChild(TreeNode<T> child)
+        public ITreeNode<T> AddChild(ITreeNode<T> child)
         {
             child.Parent = this;
 
@@ -115,7 +132,7 @@ namespace NeumannAlex.Tree
             return child;
         }
 
-        public TreeNode<T> AddChild(T value)
+        public ITreeNode<T> AddChild(T value)
         {
             var child = new TreeNode<T>(value)
             {
@@ -127,13 +144,112 @@ namespace NeumannAlex.Tree
             return child;
         }
 
-        public List<TreeNode<T>> Ancestors()
+        public ITreeNode<T> InsertBefore(ITreeNode<T> existingNode, ITreeNode<T> newNode)
+        {
+            if(Children.Contains(existingNode))
+            {
+                var nodeIndex = Children.IndexOf(existingNode);
+
+                newNode.Parent = this;
+
+                Children.Insert(nodeIndex, newNode);
+
+                return newNode;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException("No child found that matches the parameter 'existingNode'.");
+            }
+        }
+
+        public ITreeNode<T> InsertBefore(ITreeNode<T> existingNode, T value)
+        {
+            var newNode = new TreeNode<T>(value);
+
+            return InsertBefore(existingNode, newNode);
+        }
+
+        public ITreeNode<T> InsertAfter(ITreeNode<T> existingNode, ITreeNode<T> newNode)
+        {
+            if (Children.Contains(existingNode))
+            {
+                var nodeIndex = Children.IndexOf(existingNode) + 1;
+
+                newNode.Parent = this;
+
+                Children.Insert(nodeIndex, newNode);
+
+                return newNode;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException("No child found that matches the parameter 'existingNode'.");
+            }
+        }
+
+        public ITreeNode<T> InsertAfter(ITreeNode<T> existingNode, T value)
+        {
+            var newNode = new TreeNode<T>(value);
+
+            return InsertAfter(existingNode, newNode);
+        }
+
+        public ITreeNode<T> InsertBelow(ITreeNode<T> existingNode, ITreeNode<T> newNode)
+        {
+            if (Children.Contains(existingNode))
+            {
+                return existingNode.AddChild(newNode);
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException("No child found that matches the parameter 'existingNode'.");
+            }
+        }
+
+        public ITreeNode<T> InsertBelow(ITreeNode<T> existingNode, T value)
+        {
+            var newNode = new TreeNode<T>(value);
+
+            return InsertBelow(existingNode, newNode);
+        }
+
+        public bool Remove()
+        {
+            if (Parent == null)
+                return false;
+
+            return Parent.Children.Remove(this);
+        }
+
+        public bool Remove(ITreeNode<T> existingNode)
+        {
+            if (Children.Contains(existingNode))
+            {
+                return Children.Remove(existingNode);
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException("No child found that matches the parameter 'existingNode'.");
+            }
+        }
+
+        public bool RemoveAt(int index)
+        {
+            if (index < 0 || index >= Children.Count)
+                throw new ArgumentOutOfRangeException($"No child found at index '{index}'.");
+
+            Children.RemoveAt(index);
+
+            return true;
+        }
+
+        public List<ITreeNode<T>> Ancestors()
         {
             return GetAncestors(this);
 
-            static List<TreeNode<T>> GetAncestors(TreeNode<T> node)
+            static List<ITreeNode<T>> GetAncestors(ITreeNode<T> node)
             {
-                var ancestors = new List<TreeNode<T>>();
+                var ancestors = new List<ITreeNode<T>>();
 
                 if (node.Parent != null)
                 {
@@ -149,17 +265,16 @@ namespace NeumannAlex.Tree
 
         }
 
-        public List<TreeNode<T>> Descendants()
+        public List<ITreeNode<T>> Descendants()
         {
             return GetDescendants(this);
 
-            static List<TreeNode<T>> GetDescendants(TreeNode<T> node)
+            static List<ITreeNode<T>> GetDescendants(ITreeNode<T> node)
             {
-                var descendants = new List<TreeNode<T>>();
+                var descendants = new List<ITreeNode<T>>();
 
-                //descendants.Add(node);
 
-                foreach (var child in node.Children)
+                foreach (ITreeNode<T> child in node.Children)
                 {
                     descendants.Add(child);
 
@@ -173,15 +288,58 @@ namespace NeumannAlex.Tree
             }
         }
 
-        public override string ToString()
+        public List<ITreeNode<T>> Siblings()
         {
-            var path = string.Join('.', Path);
-            var value = HasValue ? $"\"{Value}\"" : "\"<empty>\"";
-
-            return $"[{path}] {value} Children={Children.Count} Depth={Depth} IsRoot={IsRoot}";
+            if(Parent != null)
+            {
+                var siblings = Parent.Children;
+                
+                siblings.Remove(this);
+                
+                return siblings;
+            }
+            else
+            {
+                return new List<ITreeNode<T>>();
+            }
         }
 
-        public List<TreeNode<T>> ToList(TreeTraverseOrder order = TreeTraverseOrder.DepthFirst)
+        public List<ITreeNode<T>> Predecessors()
+        {
+            if (Parent != null)
+            {
+                var myIndex = Parent.Children.IndexOf(this);
+
+                return Parent.Children.GetRange(0, myIndex);
+            }
+            else
+            {
+                return new List<ITreeNode<T>>();
+            }
+        }
+
+        public List<ITreeNode<T>> Successors()
+        {
+            if (Parent != null)
+            {
+                var myIndex = Parent.Children.IndexOf(this);
+
+                return Parent.Children.GetRange(myIndex + 1, Parent.Children.Count - myIndex - 1);
+            }
+            else
+            {
+                return new List<ITreeNode<T>>();
+            }
+        }
+
+        public override string ToString()
+        {
+            var value = HasValue ? $"\"{Value}\"" : "\"<empty>\"";
+
+            return $"[{PathString}] {value} Children={Children.Count} Depth={Depth} IsRoot={IsRoot}";
+        }
+
+        public List<ITreeNode<T>> ToList(TreeTraverseOrder order = TreeTraverseOrder.DepthFirst)
         {
             if (order == TreeTraverseOrder.DepthFirst)
                 return GetNodesDepthFirst(this);
@@ -189,14 +347,14 @@ namespace NeumannAlex.Tree
                 return GetNodesBreadthFirst(this);
         }
 
-        private List<TreeNode<T>> GetNodesDepthFirst(TreeNode<T> node)
+        private List<ITreeNode<T>> GetNodesDepthFirst(ITreeNode<T> node)
         {
-            var nodes = new List<TreeNode<T>>();
+            var nodes = new List<ITreeNode<T>>();
 
-            if(!(node is Tree<T>))
+            if (!(node is Tree<T>))
                 nodes.Add(node);
 
-            foreach (var child in node.Children)
+            foreach (ITreeNode<T> child in node.Children)
             {
                 var childNodes = GetNodesDepthFirst(child);
                 nodes.AddRange(childNodes);
@@ -205,12 +363,12 @@ namespace NeumannAlex.Tree
             return nodes;
         }
 
-        private List<TreeNode<T>> GetNodesBreadthFirst(TreeNode<T> root)
+        private List<ITreeNode<T>> GetNodesBreadthFirst(ITreeNode<T> root)
         {
-            List<TreeNode<T>> sortedNodes = new List<TreeNode<T>>();
+            List<ITreeNode<T>> sortedNodes = new List<ITreeNode<T>>();
 
-            Queue<TreeNode<T>> queue = new Queue<TreeNode<T>>();
-            HashSet<TreeNode<T>> set = new HashSet<TreeNode<T>>();
+            Queue<ITreeNode<T>> queue = new Queue<ITreeNode<T>>();
+            HashSet<ITreeNode<T>> set = new HashSet<ITreeNode<T>>();
 
             queue.Enqueue(root);
             set.Add(root);
@@ -236,7 +394,7 @@ namespace NeumannAlex.Tree
         #endregion
 
         #region IEnumerable<T>
-        public IEnumerator<TreeNode<T>> GetEnumerator()
+        public IEnumerator<ITreeNode<T>> GetEnumerator()
         {
             foreach (var node in ToList())
                 yield return node;

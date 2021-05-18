@@ -11,15 +11,15 @@ namespace Tests
     {
         public Tree<string> Tree { get; set; }
 
-        public TreeNode<string> Node1 { get; set; }
-        public TreeNode<string> Node11 { get; set; }
+        public ITreeNode<string> Node1 { get; set; }
+        public ITreeNode<string> Node11 { get; set; }
 
-        public TreeNode<string> Node2 { get; set; }
-        public TreeNode<string> Node21 { get; set; }
-        public TreeNode<string> Node211 { get; set; }
-        public TreeNode<string> Node22 { get; set; }
+        public ITreeNode<string> Node2 { get; set; }
+        public ITreeNode<string> Node21 { get; set; }
+        public ITreeNode<string> Node211 { get; set; }
+        public ITreeNode<string> Node22 { get; set; }
 
-        public TreeNode<string> Node3 { get; set; }
+        public ITreeNode<string> Node3 { get; set; }
 
         public int NumberOfNodes
         {
@@ -27,7 +27,7 @@ namespace Tests
             {
                 var props = typeof(TestTreeData).GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
 
-                var nodes = props.Where(x => x.PropertyType == typeof(TreeNode<string>));
+                var nodes = props.Where(x => x.PropertyType == typeof(ITreeNode<string>));
 
                 return nodes.Count();
             }
@@ -60,14 +60,12 @@ namespace Tests
         }
 
         [Fact]
-        public void EmptyTree()
+        public void SmallestTree()
         {
             var tree = new Tree<string>();
 
             tree.Count.Should().Be(0);
-            tree.IsRoot.Should().BeTrue();
-            tree.Depth.Should().Be(0);
-            tree.Path.Should().HaveCount(0);
+            tree.TreeRoot.Should().NotBeNull();
         }
 
         [Fact]
@@ -88,34 +86,20 @@ namespace Tests
         }
 
         [Fact]
-        public void FilterTreeOneResult()
-        {
-            var result = _simpleTreeData.Tree.Where(x => x.Value == "node21");
-
-            result.Should().HaveCount(1);
-            result.ElementAt(0).Should().BeEquivalentTo(_simpleTreeData.Node21);
-        }
-
-        [Fact]
-        public void FilterTreeMultipleResults()
-        {
-            var result = _simpleTreeData.Tree.Where(x => x.Depth == 2);
-
-            result.Should().HaveCount(3);
-            result.Should().BeEquivalentTo(new[] { _simpleTreeData.Node11, _simpleTreeData.Node21, _simpleTreeData.Node22 });
-        }
-
-        [Fact]
-        public void FilterTreeNoResult()
-        {
-            var result = _simpleTreeData.Tree.Where(x => x.Value == "text");
-
-            result.Should().HaveCount(0);
-        }
-
-        [Fact]
         public void LinqToTree()
         {
+            var filterOneResult = _simpleTreeData.Tree.Where(x => x.Value == "node21");
+            filterOneResult.Should().HaveCount(1);
+            filterOneResult.ElementAt(0).Should().BeEquivalentTo(_simpleTreeData.Node21);
+
+            var filterMultipleResult = _simpleTreeData.Tree.Where(x => x.Depth == 2);
+            filterMultipleResult.Should().HaveCount(3);
+            filterMultipleResult.Should().BeEquivalentTo(new[] { _simpleTreeData.Node11, _simpleTreeData.Node21, _simpleTreeData.Node22 });
+
+
+            var filterNoResult = _simpleTreeData.Tree.Where(x => x.Value == "text");
+            filterNoResult.Should().HaveCount(0);
+
             var firstResult = _simpleTreeData.Tree.First(x => x.Depth == 2);
             firstResult.Should().BeEquivalentTo(_simpleTreeData.Node11);
 
@@ -144,6 +128,109 @@ namespace Tests
 
             text.Should().Contain("\"String\"")
                 .And.Contain(_simpleTreeData.NumberOfNodes.ToString());
+        }
+        
+        [Fact]
+        public void ElementAtSuccess()
+        {
+            var result1 = _simpleTreeData.Tree.NodeAtPath(new List<int> { 2, 2 });
+
+            result1.Should().BeEquivalentTo(_simpleTreeData.Node22);
+
+            var result2 = _simpleTreeData.Tree.NodeAtPath(2, 2);
+
+            result2.Should().BeEquivalentTo(_simpleTreeData.Node22);
+        }
+
+        [Fact]
+        public void ElementAtFail()
+        {
+            var result = _simpleTreeData.Tree.NodeAtPath(new List<int> { 9, 9 });
+
+            result.Should().BeNull();
+        }
+
+        [Fact]
+        public void ContainsNodeSuccess()
+        {
+            
+
+            var containsTrue = _simpleTreeData.Tree.ContainsNode(_simpleTreeData.Node211);
+
+            containsTrue.Should().BeTrue();
+
+            var copy = new TreeNode<string>("node211");
+            var containsFalse = _simpleTreeData.Tree.ContainsNode(copy);
+
+            containsFalse.Should().BeFalse();
+        }
+
+        [Fact]
+        public void ContainsNodeFail()
+        {
+            var invalid = new TreeNode<string>("invalid");
+
+            var contains = _simpleTreeData.Tree.ContainsNode(invalid);
+
+            contains.Should().BeFalse();
+        }
+
+        [Fact]
+        public void InsertBefore()
+        {
+            
+            _simpleTreeData.Tree.TreeRoot.Children.Should().HaveCount(3);
+            _simpleTreeData.Tree.TreeRoot.Children[0].Should().BeEquivalentTo(_simpleTreeData.Node1);
+            _simpleTreeData.Tree.TreeRoot.Children[1].Should().BeEquivalentTo(_simpleTreeData.Node2);
+            _simpleTreeData.Tree.TreeRoot.Children[2].Should().BeEquivalentTo(_simpleTreeData.Node3);
+
+            var insertedNode1 = _simpleTreeData.Tree.InsertBefore(_simpleTreeData.Node3, new TreeNode<string>("insertedNode1"));
+
+            _simpleTreeData.Tree.TreeRoot.Children.Should().HaveCount(4);
+            _simpleTreeData.Tree.TreeRoot.Children[0].Should().BeEquivalentTo(_simpleTreeData.Node1);
+            _simpleTreeData.Tree.TreeRoot.Children[1].Should().BeEquivalentTo(_simpleTreeData.Node2);
+            _simpleTreeData.Tree.TreeRoot.Children[2].Should().BeEquivalentTo(insertedNode1);
+            _simpleTreeData.Tree.TreeRoot.Children[3].Should().BeEquivalentTo(_simpleTreeData.Node3);
+        }
+
+        [Fact]
+        public void InsertAfter()
+        {
+
+            _simpleTreeData.Tree.TreeRoot.Children.Should().HaveCount(3);
+            _simpleTreeData.Tree.TreeRoot.Children[0].Should().BeEquivalentTo(_simpleTreeData.Node1);
+            _simpleTreeData.Tree.TreeRoot.Children[1].Should().BeEquivalentTo(_simpleTreeData.Node2);
+            _simpleTreeData.Tree.TreeRoot.Children[2].Should().BeEquivalentTo(_simpleTreeData.Node3);
+
+            var insertedNode1 = _simpleTreeData.Tree.InsertAfter(_simpleTreeData.Node2, new TreeNode<string>("insertedNode1"));
+
+            _simpleTreeData.Tree.TreeRoot.Children.Should().HaveCount(4);
+            _simpleTreeData.Tree.TreeRoot.Children[0].Should().BeEquivalentTo(_simpleTreeData.Node1);
+            _simpleTreeData.Tree.TreeRoot.Children[1].Should().BeEquivalentTo(_simpleTreeData.Node2);
+            _simpleTreeData.Tree.TreeRoot.Children[2].Should().BeEquivalentTo(insertedNode1);
+            _simpleTreeData.Tree.TreeRoot.Children[3].Should().BeEquivalentTo(_simpleTreeData.Node3);
+        }
+
+        [Fact]
+        public void InsertBelow()
+        {
+
+            _simpleTreeData.Tree.TreeRoot.Children.Should().HaveCount(3);
+            _simpleTreeData.Tree.TreeRoot.Children[0].Should().BeEquivalentTo(_simpleTreeData.Node1);
+            _simpleTreeData.Tree.TreeRoot.Children[1].Should().BeEquivalentTo(_simpleTreeData.Node2);
+            _simpleTreeData.Tree.TreeRoot.Children[2].Should().BeEquivalentTo(_simpleTreeData.Node3);
+
+            var initialChildCount = _simpleTreeData.Node2.Children.Count;
+
+            var insertedNode1 = _simpleTreeData.Tree.InsertBelow(_simpleTreeData.Node2, new TreeNode<string>("insertedNode1"));
+
+            _simpleTreeData.Tree.TreeRoot.Children.Should().HaveCount(3);
+            _simpleTreeData.Tree.TreeRoot.Children[0].Should().BeEquivalentTo(_simpleTreeData.Node1);
+            _simpleTreeData.Tree.TreeRoot.Children[1].Should().BeEquivalentTo(_simpleTreeData.Node2);
+            _simpleTreeData.Tree.TreeRoot.Children[2].Should().BeEquivalentTo(_simpleTreeData.Node3);
+
+            _simpleTreeData.Node2.Children.Count.Should().Be(initialChildCount + 1);
+            _simpleTreeData.Node2.Children[^1].Should().BeEquivalentTo(insertedNode1);
         }
     }
 }
