@@ -339,6 +339,55 @@ namespace NeumannAlex.Tree
             return $"[{PathString}] {value} Children={Children.Count} Depth={Depth} IsRoot={IsRoot}";
         }
 
+        public string ToText(string indent = "", Func<ITreeNode<T>, string> nodeFormat = null)
+        {
+            string _cross = " ├─";
+            string _corner = " └─";
+            string _vertical = " │ ";
+            string _space = "   ";
+
+            var sb = new StringBuilder();
+
+            sb.Append(indent);
+
+            if(Successors().Count() == 0)
+            {
+                if(!IsRoot)
+                {
+                    sb.Append(_corner);
+                    indent += _space;
+                }
+            }
+            else
+            {
+                sb.Append(_cross);
+                indent += _vertical;
+            }
+
+            if (Value != null)
+            {
+                var text = nodeFormat != null ? nodeFormat(this) : ToString();
+
+                sb.AppendLine(text);
+            }
+            else
+            {
+                if (IsRoot)
+                    sb.AppendLine("Root");
+                else
+                    sb.AppendLine($"Item for node at depth {Depth} is NULL.");
+            }
+
+            var numberOfChildren = Children.Count;
+            for (var i = 0; i < numberOfChildren; i++)
+            {
+                var child = Children[i];
+                sb.Append(child.ToText(indent, nodeFormat));
+            }
+
+            return sb.ToString();
+        }
+
         public List<ITreeNode<T>> ToList(TreeTraverseOrder order = TreeTraverseOrder.DepthFirst)
         {
             if (order == TreeTraverseOrder.DepthFirst)
@@ -390,7 +439,6 @@ namespace NeumannAlex.Tree
 
             return sortedNodes;
         }
-
         #endregion
 
         #region IEnumerable<T>

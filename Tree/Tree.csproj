@@ -12,8 +12,8 @@
     <PackageProjectUrl>https://github.com/neumannalex/Tree</PackageProjectUrl>
     <RepositoryUrl>https://github.com/neumannalex/Tree</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Version>1.2.0</Version>
-    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <Version>1.3.0</Version>
+    <AssemblyVersion>1.3.0.0</AssemblyVersion>
   </PropertyGroup>
 
 </Project>

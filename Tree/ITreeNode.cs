@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace NeumannAlex.Tree
 {
@@ -62,6 +63,8 @@ namespace NeumannAlex.Tree
         List<ITreeNode<T>> Successors();
 
         string ToString();
+
+        string ToText(string indent, Func<ITreeNode<T>, string> nodeFormat);
 
         List<ITreeNode<T>> ToList(TreeTraverseOrder order = TreeTraverseOrder.DepthFirst);
         

@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using NeumannAlex.Tree;
 using System;
 using System.Collections.Generic;
@@ -652,6 +652,37 @@ namespace Tests
             var successors3 = node15.Successors();
 
             successors3.Should().HaveCount(0);
+        }
+
+        [Fact]
+        public void ToText()
+        {
+            var node1 = new TreeNode<string>("node1");
+
+            var node11 = node1.AddChild("node11");
+            var node12 = node1.AddChild("node12");
+            var node13 = node1.AddChild("node13");
+
+            var node121 = node12.AddChild("node121");
+            var node122 = node12.AddChild("node122");
+
+            var node1211 = node121.AddChild("node1211");
+
+            var text = node1.ToText();
+
+            text.Should().NotBeNullOrEmpty();
+            
+            var lines = text.Split('\n');
+            lines.Should().HaveCount(8);
+
+            var crosses = text.ToList().FindAll(x => x == '├');
+            crosses.Should().HaveCount(3);
+
+            var corners = text.ToList().FindAll(x => x == '└');
+            corners.Should().HaveCount(3);
+
+            var verticals = text.ToList().FindAll(x => x == '│');
+            verticals.Should().HaveCount(4);
         }
     }
 }

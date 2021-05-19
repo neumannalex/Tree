@@ -17,6 +17,8 @@ namespace NeumannAlex.Tree
             }
         }
 
+        public Dictionary<string, string> Tags { get; set; } = new Dictionary<string, string>();
+
         public Tree()
         {
             TreeRoot = new TreeNode<T>();
